@@ -1,0 +1,49 @@
+# ─── PinLock specific ────────────────────────────────────────────
+# User's local config contains the PIN in plain text.
+# The script auto-creates config.json on first run from defaults
+# baked into pinlock.pyw, so there's no need to commit it.
+config.json
+
+# Optional log files (if you add logging later)
+*.log
+
+
+# ─── Python ──────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+
+# ─── Editors / IDEs ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+
+# ─── OS ──────────────────────────────────────────────────────────
+# Windows
+Thumbs.db
+desktop.ini
+ehthumbs.db
+*.lnk
+
+# macOS
+.DS_Store
+
+# Linux
+.directory
