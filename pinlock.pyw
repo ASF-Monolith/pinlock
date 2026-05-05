@@ -1,10 +1,10 @@
 """
-PIN Lock Screen pro Windows 11 - podpora více monitorů
-Kliknutím na zamčenou plochu se zobrazí PIN klávesnice.
-Spustit: pythonw pinlock.pyw
+PIN Lock Screen for Windows 11 - multi-monitor support
+Click the locked screen to reveal the PIN keypad.
+Run with: pythonw pinlock.pyw
 
-Konfigurace se načítá z config.json vedle tohoto skriptu.
-Pokud soubor neexistuje, vytvoří se automaticky s výchozími hodnotami.
+Configuration is loaded from config.json next to this script.
+If the file doesn't exist, it's created automatically with default values.
 """
 
 import os
@@ -16,7 +16,7 @@ import ctypes
 import ctypes.wintypes
 
 
-# ─── VÝCHOZÍ KONFIGURACE ──────────────────────────────────────────
+# ─── DEFAULT CONFIGURATION ────────────────────────────────────────
 DEFAULT_CONFIG = {
     "correct_pin": "6060",
     "auto_unlock_minutes": 32,
@@ -25,10 +25,10 @@ DEFAULT_CONFIG = {
 }
 MIN_PIN_LENGTH = 4
 
-# ─── NÁZEV KONFIGURAČNÍHO SOUBORU ─────────────────────────────────
+# ─── CONFIG FILENAME ──────────────────────────────────────────────
 CONFIG_FILENAME = "config.json"
 
-# Globální proměnné nastavené z configu při startu
+# Global variables populated from config at startup
 CORRECT_PIN           = ""
 AUTO_UNLOCK_MINUTES   = 0
 MAX_ATTEMPTS          = 0
@@ -36,7 +36,7 @@ LOCKOUT_RESET_MINUTES = 0
 PIN_LENGTH            = 0
 
 
-# ─── NAČÍTÁNÍ A VALIDACE KONFIGURACE ──────────────────────────────
+# ─── CONFIG LOADING AND VALIDATION ────────────────────────────────
 def get_config_path():
     base = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base, CONFIG_FILENAME)
@@ -51,34 +51,34 @@ def write_default_config(path):
 def load_config():
     config_path = get_config_path()
 
-    # Auto-vytvoření při prvním spuštění
+    # Auto-create on first launch
     if not os.path.exists(config_path):
         try:
             write_default_config(config_path)
         except OSError as e:
             raise ValueError(
-                f"Nelze vytvořit {CONFIG_FILENAME}:\n{e}\n\n"
-                f"Cesta: {config_path}"
+                f"Cannot create {CONFIG_FILENAME}:\n{e}\n\n"
+                f"Path: {config_path}"
             )
         return validate_config(DEFAULT_CONFIG.copy())
 
-    # Načtení existujícího
+    # Load existing config
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
     except json.JSONDecodeError as e:
         raise ValueError(
-            f"{CONFIG_FILENAME} je poškozený JSON:\n{e}\n\n"
-            f"Cesta: {config_path}\n\n"
-            f"Smaž ho – při dalším spuštění se vytvoří nový."
+            f"{CONFIG_FILENAME} contains invalid JSON:\n{e}\n\n"
+            f"Path: {config_path}\n\n"
+            f"Delete it - a new one will be created on next launch."
         )
     except OSError as e:
-        raise ValueError(f"Nelze otevřít {CONFIG_FILENAME}:\n{e}")
+        raise ValueError(f"Cannot open {CONFIG_FILENAME}:\n{e}")
 
     if not isinstance(config, dict):
-        raise ValueError(f"{CONFIG_FILENAME} musí obsahovat JSON objekt {{...}}")
+        raise ValueError(f"{CONFIG_FILENAME} must contain a JSON object {{...}}")
 
-    # Doplnění chybějících klíčů z výchozích
+    # Fill missing keys from defaults
     for key, default in DEFAULT_CONFIG.items():
         config.setdefault(key, default)
 
@@ -90,16 +90,16 @@ def validate_config(config):
     pin = str(config["correct_pin"])
     if not pin.isdigit() or len(pin) < MIN_PIN_LENGTH:
         raise ValueError(
-            f"V {CONFIG_FILENAME}: 'correct_pin' musí obsahovat pouze číslice "
-            f"a mít alespoň {MIN_PIN_LENGTH} znaky.\n\n"
-            f"Aktuální hodnota: '{pin}'\n\n"
-            f"Tip: PIN s úvodními nulami zapiš jako řetězec, např. \"0123\"."
+            f"In {CONFIG_FILENAME}: 'correct_pin' must contain digits only "
+            f"and be at least {MIN_PIN_LENGTH} characters long.\n\n"
+            f"Current value: '{pin}'\n\n"
+            f"Tip: write PINs with leading zeros as a string, e.g. \"0123\"."
         )
     config["correct_pin"] = pin
 
-    # Číselné hodnoty
+    # Numeric values
     int_rules = {
-        "auto_unlock_minutes":   0,  # 0 = vypnuto
+        "auto_unlock_minutes":   0,  # 0 = disabled
         "max_attempts":          1,
         "lockout_reset_minutes": 1,
     }
@@ -107,15 +107,15 @@ def validate_config(config):
         val = config[key]
         if not isinstance(val, int) or isinstance(val, bool) or val < min_val:
             raise ValueError(
-                f"V {CONFIG_FILENAME}: '{key}' musí být celé číslo >= {min_val}.\n\n"
-                f"Aktuální hodnota: {val!r}"
+                f"In {CONFIG_FILENAME}: '{key}' must be an integer >= {min_val}.\n\n"
+                f"Current value: {val!r}"
             )
 
     return config
 
 
 def show_error_and_exit(title, msg):
-    """Zobraz chybu i v pythonw režimu (kde stderr není vidět)."""
+    """Show error even in pythonw mode (where stderr isn't visible)."""
     try:
         r = tk.Tk()
         r.withdraw()
@@ -127,7 +127,7 @@ def show_error_and_exit(title, msg):
     sys.exit(1)
 
 
-# ─── ENUMERACE MONITORŮ ───────────────────────────────────────────
+# ─── MONITOR ENUMERATION ──────────────────────────────────────────
 def get_all_monitors():
     monitors = []
     MonitorEnumProc = ctypes.WINFUNCTYPE(
@@ -145,7 +145,7 @@ def get_all_monitors():
     return monitors
 
 
-# ─── HLAVNÍ TŘÍDA ─────────────────────────────────────────────────
+# ─── MAIN CLASS ───────────────────────────────────────────────────
 class PinLock:
     def __init__(self):
         monitors = get_all_monitors()
@@ -285,7 +285,7 @@ class PinLock:
                 b.bind("<Leave>", lambda e, btn=b: btn.config(bg="#1e2d3d"))
                 self.buttons.append((b, fg))
 
-        tk.Label(frame, text=f"Zadej {PIN_LENGTH}místný PIN pro odemknutí",
+        tk.Label(frame, text=f"Enter your {PIN_LENGTH}-digit PIN to unlock",
                  font=("Segoe UI", 9), bg="#141428", fg="#455a64").pack(pady=(10, 22))
 
     def _lockout(self):
@@ -302,7 +302,7 @@ class PinLock:
             btn.unbind("<Leave>")
         self.dots_var.set("🚫")
         self.error_var.set(
-            f"Příliš mnoho pokusů – odblokování za {LOCKOUT_RESET_MINUTES} min"
+            f"Too many attempts - keypad locked for {LOCKOUT_RESET_MINUTES} min"
         )
         ms = LOCKOUT_RESET_MINUTES * 60 * 1000
         self.root.after(ms, self._reset_lockout)
@@ -385,9 +385,9 @@ class PinLock:
             if remaining <= 0:
                 self._lockout()
             else:
+                attempt_word = "attempt" if remaining == 1 else "attempts"
                 self.error_var.set(
-                    f"❌  Nesprávný PIN  (zbývá {remaining} "
-                    f"{'pokus' if remaining == 1 else 'pokusy' if 2 <= remaining <= 4 else 'pokusů'})"
+                    f"❌  Wrong PIN  ({remaining} {attempt_word} remaining)"
                 )
             self.pin_input = ""
             self._update_dots()
@@ -410,11 +410,11 @@ class PinLock:
 
 # ─── ENTRY POINT ──────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Načtení konfigurace s ošetřením chyb (pythonw nezobrazuje stderr)
+    # Load configuration with error handling (pythonw doesn't show stderr)
     try:
         cfg = load_config()
     except ValueError as e:
-        show_error_and_exit("PinLock - chyba konfigurace", str(e))
+        show_error_and_exit("PinLock - configuration error", str(e))
 
     CORRECT_PIN           = cfg["correct_pin"]
     AUTO_UNLOCK_MINUTES   = cfg["auto_unlock_minutes"]
